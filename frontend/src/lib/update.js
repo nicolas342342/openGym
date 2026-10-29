@@ -12,7 +12,8 @@
 import { MOBILE } from './mobile.js'
 import { APK_VARIANTS, APK_VARIANT } from './apk-variant.js'
 
-const REPO = 'DuarteSantos8/openGym'
+// Symmetry Gym: the fork's own releases, so the updater never offers the official openGym APK.
+const REPO = 'nicolas342342/openGym'
 const LATEST_URL = `https://api.github.com/repos/${REPO}/releases/latest`
 export const RELEASES_PAGE = `https://github.com/${REPO}/releases/latest`
 

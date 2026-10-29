@@ -1,0 +1,93 @@
+# Symmetry Gym: builds the Android APK of this fork in the cloud (no Android Studio needed).
+#
+# Runs on every push to the `symmetry` branch and by hand (Actions → Symmetry APK → Run workflow).
+# The APK is attached to the run as "symmetry-gym-apk" (kept 30 days).
+#
+# Signing: Android only installs an update over the old app when both carry the same key, so the
+# key lives in two repository secrets (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_B64       the keystore file, base64
+#   ANDROID_KEYSTORE_PASSWORD  its password (store and key)
+# Without them the run fails on purpose instead of handing out an APK nobody can update.
+#
+# Media: only the 180 px exercise media from catalogue/media, which their licence allows in CI
+# (NOTICE.md). Nothing larger is ever built here.
+name: Symmetry APK
+
+on:
+  push:
+    branches: [symmetry]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: symmetry-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Check the signing key is there
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KS" ] || [ -z "$PW" ]; then
+            echo "::error::Add the ANDROID_KEYSTORE_B64 and ANDROID_KEYSTORE_PASSWORD secrets (see the top of this file)."
+            exit 1
+          fi
+
+      - name: Build the web app into the Android project
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build:mobile
+
+      - name: Build the APK
+        working-directory: frontend/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleSideloadRelease
+
+      - name: Sign
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -eu
+          VER="$(node -p "require('./frontend/package.json').version")"
+          UNSIGNED=frontend/android/app/build/outputs/apk/sideload/release/app-sideload-release-unsigned.apk
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/ks.jks"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" "$RUNNER_TEMP/aligned.apk"
+          mkdir -p out
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/ks.jks" --ks-key-alias symmetry \
+            --ks-pass env:ANDROID_KEYSTORE_PASSWORD --key-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --out "out/SymmetryGym-$VER-${GITHUB_SHA::7}.apk" "$RUNNER_TEMP/aligned.apk"
+          rm -f "$RUNNER_TEMP/ks.jks"
+          "$BT/apksigner" verify --print-certs out/*.apk
+          (cd out && sha256sum *.apk > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symmetry-gym-apk
+          path: out/
+          retention-days: 30
+          compression-level: 0
