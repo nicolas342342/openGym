@@ -13,8 +13,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Symmetry Gym: the APK workflow numbers every build (.github/workflows/symmetry-apk.yml),
         // so each one installs over the last and the in-app updater sees it as newer.
-        versionCode (System.getenv("SYMMETRY_VERSION_CODE") ?: "28") as Integer
-        versionName System.getenv("SYMMETRY_VERSION_NAME") ?: "1.4.3"
+        versionCode(Integer.parseInt(System.getenv("SYMMETRY_VERSION_CODE") ?: "28"))
+        versionName(System.getenv("SYMMETRY_VERSION_NAME") ?: "1.4.3")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
