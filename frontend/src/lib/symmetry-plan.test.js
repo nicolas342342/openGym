@@ -22,9 +22,10 @@ describe('symmetry starter plan', () => {
     expect(SYMMETRY_CUSTOM_EX[0].n).not.toBe('changed')
   })
 
-  it('every lift of the routine that has a rank table is one ranks.js knows', () => {
+  it('uses the Tauro machines, ranked in plates', () => {
     const ids = plan.routines.flatMap(r => r.ex.map(e => e.id))
     for (const id of Object.values(SYM)) expect(ids).toContain(id)
-    for (const id of Object.values(SYM)) expect(STD[id]).toBeTruthy()
+    expect(STD[SYM.jalon].plates).toBe(true)
+    expect(STD[SYM.remoPecho].plates).toBe(true)
   })
 })

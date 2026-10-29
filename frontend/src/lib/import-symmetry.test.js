@@ -30,8 +30,10 @@ const backup = () => ({
 })
 
 describe('import-symmetry: weights', () => {
-  it('follows the artifact export: plates × 10, per side × 2 (+ bar), dumbbell as is, pounds, body weight', () => {
-    expect(ogWeight('jalon_gym80', 'pl', 7)).toMatchObject({ kg: 70 })
+  it('keeps plates as plates; per side × 2 (+ bar), dumbbell as is, pounds, body weight', () => {
+    expect(ogWeight('jalon_gym80', 'pl', 7)).toEqual({ kg: 7, plates: true, note: 'en placas' })
+    // a machine logged in kg everywhere else: the odd plates set becomes kg, so it never mixes
+    expect(ogWeight('ext_cuad', 'pl', 4)).toMatchObject({ kg: 40 })
     expect(ogWeight('prensa_45', 'lado', 40)).toMatchObject({ kg: 80 })
     expect(ogWeight('press_plano', 'lado', 20)).toMatchObject({ kg: 60, note: '20 kg/lado + barra 20' })
     expect(ogWeight('curl_martillo', 'mc', 5)).toMatchObject({ kg: 5, note: 'por mancuerna' })
@@ -66,11 +68,11 @@ describe('import-symmetry: parse', () => {
     ])
     expect(press.topW).toBe(22)
     expect(press.note).toBe('por mancuerna · fallo')
-    expect(w.entries.find(e => e.id === SYM.jalon).sets[0].w).toBe(75)
+    expect(w.entries.find(e => e.id === SYM.jalon).sets[0].w).toBe(7.5)
     expect(w.entries.find(e => e.id === '0047').sets[0].w).toBe(40)
     expect(w.entries.find(e => e.id === '1452').sets[0].w).toBeCloseTo(45.36)
     expect(w.entries.find(e => e.id === TREADMILL).sets).toEqual([{ min: 15, speed: 5.5, incline: 10, done: true }])
-    expect(w.vol).toBe(20 * 10 + 22 * 8 + 75 * 10 + 40 * 8 + 45.36 * 15 + 30 * 12)
+    expect(w.vol).toBe(20 * 10 + 22 * 8 + 7.5 * 10 + 40 * 8 + 45.36 * 15 + 30 * 12)
   })
 
   it('turns an unknown exercise into a custom one, named from the backup', () => {
@@ -87,6 +89,7 @@ describe('import-symmetry: parse', () => {
   it('a profile in pounds gets pounds', () => {
     const lb = parseSymmetryBackup(backup(), { unit: 'lb' })
     expect(lb.workouts[0].entries.find(e => e.id === '1452').sets[0].w).toBe(100)
+    expect(lb.workouts[0].entries.find(e => e.id === SYM.jalon).sets[0].w).toBe(7.5)
     expect(lb.bodyweight[0].w).toBeCloseTo(156.97, 1)
   })
 })

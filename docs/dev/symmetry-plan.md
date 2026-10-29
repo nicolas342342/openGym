@@ -49,8 +49,11 @@ Weigh-ins reuse openGym's `S.bodyweight`, so the check-in, the weigh-in sheet an
 
 - `STD` tables, `RANK_MUSCLE` and the `ISO` anti-momentum filter (isolation: only sets of 8+ reps,
   no jump over 25% on the set before) ported to openGym exercise ids.
-- Weights: openGym logs kg (lb profiles converted). Plate-stack tables read kg ÷ 10 (1 plate ≈ 10 kg,
-  the same rule the artifact's export used); per-side tables read kg ÷ 2; dumbbell RDL × 2.
+- Weights: kg (lb profiles converted), except plate-stack machines (gym80 pulldown and chest row,
+  Cybex, cable stacks): those are logged as a count of plates, because what a Tauro plate weighs
+  is unknown (a 10 kg guess showed a 100 kg pulldown). Their tables read plates directly; the
+  wide pulldown logged in kg reads kg ÷ 5.83 (the artifact's rule); dumbbell RDL × 2. The routine
+  notes say "anota el número de placas" on those machines, and the custom ones are named "(placas)".
 - Bronze → Diamond with I / II / III, athlete level 1-99 with XP, best lift of the last 60 days.
 - Ranks screen (`/ranks`), level card on Home, toast "Rank up!" when a finished workout moves a
   muscle into the next rank.
@@ -87,7 +90,8 @@ Weigh-ins reuse openGym's `S.bodyweight`, so the check-in, the weigh-in sheet an
 - Food tab → "Import backup" (`views/Food.jsx` ImportCard): reads the JSON from the artifact's "Exportar copia"
   (state v4: `sessions[].entries[].sets`, `days{ meals, water, act }`, `weights`).
 - Sessions → `S.workouts` with the id map above; weights through the artifact's `ogWeight()`
-  (pl × 10 kg, lado × 2 (+20 kg bar on barbells), mc as is, lb kept as lb, pc → 0 with a note).
+  (plates kept as a count, except the odd plate set on a machine logged in kg, which becomes × 10 kg;
+  lado × 2 (+20 kg bar on barbells), mc as is, lb converted, pc → 0 with a note).
   Warm-ups (`t: 'w'`) → `warmup: true`; failure (`t: 'f'`) → `failure: true`. Cardio → treadmill sets.
 - `days` → `S.food`; `weights` → `S.bodyweight`. Pure in `lib/import-symmetry.js` (+ test); a day already in openGym is
   kept, so importing twice adds nothing. The artifact's own custom exercises become `sym-*` customs.

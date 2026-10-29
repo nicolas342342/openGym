@@ -2,9 +2,11 @@
 // ported from Symmetry Tauro (STD, RANK_MUSCLE, ISO). Read straight off the logged workouts.
 //
 // Every table is the estimated 1RM (Epley) for ~70 kg at Bronze, Silver, Gold, Platinum,
-// Diamond, in the unit the artifact kept for that lift. `f` turns the kg openGym logged into
-// that unit: per dumbbell (×1), per side (÷2), total (×1), or plates on a stack (÷10, the same
-// 1 plate ≈ 10 kg the artifact import uses).
+// Diamond, in the unit the artifact kept for that lift. `f` turns the number openGym logged
+// into that unit: per dumbbell (×1), total (×1), dumbbell RDL (×2), the wide pulldown's kg into
+// its plates (÷5.83, the artifact's own rule). Plate-stack tables (`plates: true`) read the
+// logged number as a count of plates: what a Tauro plate weighs is unknown, so it is never
+// turned into kg (lib/import-symmetry.js keeps plates as plates).
 import { isWarmupRow } from './workout-model.js'
 import { addDays } from './nutrition.js'
 
@@ -17,25 +19,25 @@ export const RANKS = [
 // Tauro Gym machines the catalogue has no entry for; seeded as custom exercises (lib/symmetry-plan.js).
 export const SYM = { cybex: 'sym-cybex-chest', jalon: 'sym-gym80-pulldown', remoPecho: 'sym-gym80-chest-row' }
 
-const PL = w => w / 10, HALF = w => w / 2, ONE = w => w, TWO = w => w * 2
+const ONE = w => w, TWO = w => w * 2, KG_TO_PL = w => w / 5.83
 const T_PRENSA = [60, 100, 150, 200, 260], T_RDL = [40, 65, 95, 125, 160], T_TRI = [4, 6.5, 9, 12, 15]
 const T_CURL = [5, 8.5, 12.5, 16.5, 21], T_JALON = [6, 9, 12, 15, 18], T_FEM = [45, 65, 85, 105, 130], T_CALF = [40, 70, 105, 140, 180]
 const ST = (t, f) => ({ t, f })
+const PL = t => ({ t, f: ONE, plates: true })
 // openGym id → table. Ids match lib/symmetry-plan.js (the artifact's EN_NAME, looked up in the catalogue).
 export const STD = {
   '0314': ST([12, 18, 25, 32, 40], ONE),            // press inclinado mancuernas (c/u)
-  '0576': ST([15, 22.5, 32.5, 42.5, 55], HALF),     // press plano convergente (kg/lado)
-  [SYM.cybex]: ST([15, 22.5, 32.5, 42.5, 55], HALF),
+  '0576': ST([15, 22.5, 32.5, 42.5, 55], ONE),      // press plano convergente (kg por lado)
   '1030': ST([20, 35, 50, 65, 85], ONE),            // pec deck
-  [SYM.jalon]: ST(T_JALON, PL), '2291': ST(T_JALON, PL), '7583': ST(T_JALON, PL),
-  [SYM.remoPecho]: ST([5, 7.5, 10, 13, 16], PL), '1350': ST([5, 7.5, 10, 13, 16], PL),
+  [SYM.jalon]: PL(T_JALON), '2291': ST(T_JALON, KG_TO_PL), '7583': ST(T_JALON, KG_TO_PL),
+  [SYM.remoPecho]: PL([5, 7.5, 10, 13, 16]), '1350': PL([5, 7.5, 10, 13, 16]),
   '0606': ST([15, 25, 37.5, 50, 65], ONE),          // remo en T
   '0405': ST([8, 13, 19, 25, 32], ONE),             // press militar mancuernas
   '0584': ST([20, 32, 45, 58, 70], ONE),            // elevación lateral máquina
   '0318': ST(T_CURL, ONE), '3084': ST(T_CURL, ONE),
-  '0868': ST([3, 5, 7.5, 10, 12.5], PL),            // curl polea
-  '0241': ST(T_TRI, PL), '0194': ST(T_TRI, PL), '0200': ST(T_TRI, PL),
-  '1451': ST([5, 7.5, 10.5, 13.5, 17], PL),         // seated dip
+  '0868': PL([3, 5, 7.5, 10, 12.5]),                // curl polea
+  '0241': PL(T_TRI), '0194': PL(T_TRI), '0200': PL(T_TRI),
+  '1451': PL([5, 7.5, 10.5, 13.5, 17]),             // seated dip
   '0739': ST(T_PRENSA, ONE),
   '0743': ST([25, 50, 80, 115, 155], ONE),          // hack
   '0585': ST([35, 55, 75, 95, 120], ONE),           // extensión cuádriceps
@@ -48,7 +50,7 @@ export const STD = {
 }
 
 export const RANK_MUSCLE = {
-  chest: ['0314', '0576', SYM.cybex, '1030'],
+  chest: ['0314', '0576', '1030'],
   back: [SYM.jalon, '2291', '7583', SYM.remoPecho, '1350', '0606'],
   shoulders: ['0405', '0584'],
   biceps: ['0318', '3084', '0868'],
@@ -82,7 +84,7 @@ export function rankInfo(score) {
 export function bestLift(S, exId, since) {
   const std = STD[exId]
   if (!std) return null
-  const toKg = S?.unit === 'lb' ? LB : 1
+  const toKg = S?.unit === 'lb' && !std.plates ? LB : 1
   const iso = ISO.has(exId)
   let best = null
   for (const w of Array.isArray(S?.workouts) ? S.workouts : []) {

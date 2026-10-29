@@ -1,9 +1,9 @@
 // Symmetry: the JSON backup of Symmetry Tauro (Settings → "Exportar copia", state v4) read into
 // openGym. Sessions become workouts, `days` become S.food, `weights` become weigh-ins.
 //
-// Weights follow the artifact's own export to openGym (ogWeight): plates × 10 kg, kg per side
-// × 2 (+ a 20 kg bar on barbell lifts), one dumbbell as is, pounds converted, body weight as 0
-// with the added load in the note. The unit it was logged in goes into the exercise's note.
+// Weights (ogWeight): kg per side × 2 (+ a 20 kg bar on barbell lifts), one dumbbell as is,
+// pounds converted, plates kept as a count of plates, body weight as 0 with the added load in
+// the note. The unit it was logged in goes into the exercise's note.
 import { SYM } from './ranks.js'
 import { mergeImport, importId, roundWeight } from './import-csv.js'
 import { isWarmupRow, completedVolumeOf } from './workout-model.js'
@@ -40,11 +40,21 @@ const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 const n0 = v => (Number.isFinite(+v) ? +v : 0)
 const fmt = n => String(+(+n).toFixed(2))
 
-/** kg (or lb when the profile is in lb) of one logged weight, and how it was logged. */
+// Machines Nico logs in kg (their rank table is in kg too): the odd set logged in plates there is
+// turned into kg (≈10 kg a plate, the artifact's fallback) so one exercise never mixes the two.
+const KG_MACHINES = new Set(['pec_deck', 'elev_lat_maq', 'ext_cuad', 'curl_femoral', 'curl_femoral_sentado', 'elev_talones_pie',
+  'elev_talones_prensa', 'elev_talones_sentado', 'prensa_45', 'prensa_gluteo', 'hack_squat', 'remo_t', 'jalon_ancho', 'jalon_neutro'])
+
+/**
+ * One logged weight as openGym stores it, and how it was logged. Plates stay a count of plates
+ * (`plates: true`): what a plate weighs on each Tauro stack is unknown, and a guess shows up as
+ * a 100 kg pulldown. Everything else is kg (lb converted).
+ */
 export function ogWeight(exId, unit, w) {
   w = n0(w)
   if (unit === 'lb') return { kg: w * LB, note: '' }
-  if (unit === 'pl') return { kg: w * 10, note: `${fmt(w)} placas (≈10 kg c/u)` }
+  if (unit === 'pl' && KG_MACHINES.has(exId)) return { kg: w * 10, note: `${fmt(w)} placas (≈10 kg c/u)` }
+  if (unit === 'pl') return { kg: w, plates: true, note: 'en placas' }
   if (unit === 'lado') return { kg: BARBELL.has(exId) ? w * 2 + 20 : w * 2, note: `${fmt(w)} kg/lado${BARBELL.has(exId) ? ' + barra 20' : ''}` }
   if (unit === 'mc') return { kg: w, note: 'por mancuerna' }
   if (unit === 'pc') return { kg: 0, note: w ? `lastre ${fmt(w)} kg` : '' }
@@ -85,7 +95,7 @@ export function parseSymmetryBackup(data, { unit = 'kg' } = {}) {
         const ow = ogWeight(e.exId, e.unit, x.w)
         if (ow.note) notes.add(ow.note)
         if (x.note) notes.add(String(x.note))
-        return { w: toUnit(ow.kg), r: Math.max(0, Math.round(n0(x.r))), done: true, ...(x.t === 'w' ? { phase: 'warmup' } : {}), ...(x.t === 'f' ? { failure: true } : {}) }
+        return { w: ow.plates ? roundWeight(ow.kg) : toUnit(ow.kg), r: Math.max(0, Math.round(n0(x.r))), done: true, ...(x.t === 'w' ? { phase: 'warmup' } : {}), ...(x.t === 'f' ? { failure: true } : {}) }
       })
       const id = idOf(e.exId)
       const mx = Math.max(0, ...sets.filter(x => !isWarmupRow(x)).map(x => x.w))

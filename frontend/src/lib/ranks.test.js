@@ -41,10 +41,10 @@ describe('ranks: best lift', () => {
     expect(b.v).toBeCloseTo(22 * (1 + 8 / 30))
   })
 
-  it('plates on a stack: kg ÷ 10; per side: kg ÷ 2; dumbbell RDL: ×2', () => {
-    const S = { unit: 'kg', workouts: [W(today, SYM.jalon, [[70, 10]]), W(today, '0576', [[60, 10]]), W(today, '1459', [[20, 10]])] }
+  it('plate stacks read plates, never kg; wide pulldown kg ÷ 5.83; dumbbell RDL: ×2', () => {
+    const S = { unit: 'lb', workouts: [W(today, SYM.jalon, [[7, 10]]), W(today, '2291', [[58.3, 10]]), W(today, '1459', [[44.0925, 10]])] }
     expect(bestLift(S, SYM.jalon, today).v).toBeCloseTo(7 * (1 + 10 / 30))
-    expect(bestLift(S, '0576', today).v).toBeCloseTo(30 * (1 + 10 / 30))
+    expect(bestLift(S, '2291', today).v).toBeCloseTo(26.4486 / 5.83 * (1 + 10 / 30), 1)
     expect(bestLift(S, '1459', today).v).toBeCloseTo(40 * (1 + 10 / 30))
   })
 

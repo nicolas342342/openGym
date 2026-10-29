@@ -9,7 +9,7 @@ import { t } from '../lib/i18n.js'
 import { exerciseOf } from '../lib/exercises.js'
 import { exerciseNameText } from '../lib/format.js'
 import Icon from '../components/Icon.jsx'
-import { RANK_MUSCLE, athleteLevel, muscleRanks, nextRankTarget, rankInfo, rankUps } from '../lib/ranks.js'
+import { RANK_MUSCLE, STD, athleteLevel, muscleRanks, nextRankTarget, rankInfo, rankUps } from '../lib/ranks.js'
 import '../symmetry.css'
 
 const MUSCLE_LABEL = {
@@ -69,17 +69,19 @@ export default function Ranks() {
       {Object.keys(RANK_MUSCLE).map(m => {
         const r = R[m], info = rankInfo(r.score), next = nextRankTarget(r)
         const ex = r.id ? exerciseOf(r.id) : null
+        // Plate-stack machines are logged as a count of plates (lib/ranks.js).
+        const unit = r.id && STD[r.id].plates ? t('plates') : 'kg'
         return <div className="sym-meal" key={m}>
           <span className="lrow-i" style={{ background: info.c }}><Icon name="medal" /></span>
           <div className="grow">
             <div className="row between"><span className="ttl">{MUSCLE_LABEL[m]()}</span><span className="sym-rank" style={{ color: info.c }}>{rankName(info)}</span></div>
-            <div className="dim small">{ex ? exerciseNameText(ex) + ' · ' + fmtNum(r.best.kg) + ' kg × ' + r.best.r : t('No ranked lift yet')}</div>
-            {next && <div className="muted small">{t('Next rank ({0}): {1} kg × {2}', RANK_LABEL[rankInfo(next.next).key](), fmtNum(next.kg), next.reps)}</div>}
+            <div className="dim small">{ex ? exerciseNameText(ex) + ' · ' + fmtNum(r.best.kg) + ' ' + unit + ' × ' + r.best.r : t('No ranked lift yet')}</div>
+            {next && <div className="muted small">{t('Next rank ({0}): {1} × {2}', RANK_LABEL[rankInfo(next.next).key](), fmtNum(next.kg) + ' ' + unit, next.reps)}</div>}
             <div className="sym-bar"><i style={{ width: (info.r >= 5 ? 100 : info.frac * 100) + '%', background: info.c }} /></div>
           </div>
         </div>
       })}
     </div>
-    <div className="dim small" style={{ padding: '0 4px 12px' }}>{t('Isolation lifts only count sets of 8+ reps with no jump over 25%. Machine plates count as 10 kg each.')}</div>
+    <div className="dim small" style={{ padding: '0 4px 12px' }}>{t('Isolation lifts only count sets of 8+ reps with no jump over 25%. Plate machines are counted in plates.')}</div>
   </div>
 }
