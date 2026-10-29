@@ -9,6 +9,7 @@ import { mergeImport, importId, roundWeight } from './import-csv.js'
 import { isWarmupRow, completedVolumeOf } from './workout-model.js'
 import { EXIDX } from './exercises.js'
 import { clampIncline, inclineFrom } from './incline.js'
+import { buildStarterPlan } from './starter.js'
 
 const LB = 0.45359237
 // Artifact exercise id → openGym id (catalogue looked up by the artifact's EN_NAME; the Tauro
@@ -150,5 +151,15 @@ export function mergeSymmetry(S, parsed, customEx = []) {
   if (!S.food || typeof S.food !== 'object') S.food = {}
   let foodDays = 0
   for (const [k, d] of Object.entries(parsed.food)) if (!S.food[k]) { S.food[k] = d; foodDays++ }
-  return { workouts: w.added, weighIns: bw.added, foodDays }
+  // A profile with no routine yet gets Nico's 5-day plan on Mon-Fri, as the artifact had it;
+  // one that already has routines keeps them untouched.
+  let routines = 0
+  if (!(Array.isArray(S.routines) && S.routines.length)) {
+    const plan = buildStarterPlan('symmetry')
+    S.routines = plan.routines
+    if (!S.week || typeof S.week !== 'object') S.week = {}
+    for (const { day, routineId } of plan.schedule) S.week[day] = [routineId]
+    routines = plan.routines.length
+  }
+  return { workouts: w.added, weighIns: bw.added, foodDays, routines }
 }

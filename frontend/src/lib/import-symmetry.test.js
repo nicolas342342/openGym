@@ -100,17 +100,21 @@ describe('import-symmetry: merge', () => {
   it('adds everything once; a second import adds nothing', () => {
     const S = empty()
     const p = parseSymmetryBackup(backup())
-    expect(mergeSymmetry(S, p, SYMMETRY_CUSTOM_EX)).toEqual({ workouts: 1, weighIns: 2, foodDays: 1 })
+    expect(mergeSymmetry(S, p, SYMMETRY_CUSTOM_EX)).toEqual({ workouts: 1, weighIns: 2, foodDays: 1, routines: 5 })
+    expect(S.routines.map(r => r.name)).toEqual(['Push · Empuje', 'Pull · Tracción', 'Legs · Pierna', 'Upper · Torso', 'Lower · Cadena posterior'])
+    expect(Object.keys(S.week).sort()).toEqual(['1', '2', '3', '4', '5'])
     expect(S.customEx.map(c => c.id)).toEqual(expect.arrayContaining([SYM.jalon, 'sym-mi-maquina']))
     expect(S.exWeights['0314']).toEqual({ w: 22, d: '2026-10-15' })
-    expect(mergeSymmetry(S, parseSymmetryBackup(backup()), SYMMETRY_CUSTOM_EX)).toEqual({ workouts: 0, weighIns: 0, foodDays: 0 })
+    expect(mergeSymmetry(S, parseSymmetryBackup(backup()), SYMMETRY_CUSTOM_EX)).toEqual({ workouts: 0, weighIns: 0, foodDays: 0, routines: 0 })
     expect(S.workouts).toHaveLength(1)
     expect(S.customEx.filter(c => c.id === SYM.jalon)).toHaveLength(1)
   })
 
   it('never overwrites a day already logged in openGym', () => {
-    const S = { ...empty(), food: { '2026-10-15': { meals: [], water: 100, act: {} } }, bodyweight: [{ d: '2026-10-15', w: 72 }] }
-    mergeSymmetry(S, parseSymmetryBackup(backup()))
+    const S = { ...empty(), food: { '2026-10-15': { meals: [], water: 100, act: {} } }, bodyweight: [{ d: '2026-10-15', w: 72 }], routines: [{ id: 'mine', name: 'Mine', ex: [] }], week: { 1: ['mine'] } }
+    expect(mergeSymmetry(S, parseSymmetryBackup(backup())).routines).toBe(0)
+    expect(S.routines.map(r => r.id)).toEqual(['mine'])
+    expect(S.week).toEqual({ 1: ['mine'] })
     expect(S.food['2026-10-15'].water).toBe(100)
     expect(S.bodyweight.find(b => b.d === '2026-10-15').w).toBe(72)
   })

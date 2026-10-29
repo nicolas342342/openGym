@@ -6,7 +6,8 @@ import { useUI } from '../store/useUI.js'
 import { fmtDate, fmtNum, todayISO, uid, DAYS } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
 import Icon from '../components/Icon.jsx'
-import { Button, NumberField, TextField } from '../components/ui.jsx'
+import { Button, NumberField, TextArea, TextField } from '../components/ui.jsx'
+import { parseFoodText } from '../lib/food-text.js'
 import { bwSheet } from '../sheets.jsx'
 import {
   GOALS, BASE_KCAL, QUICK_MEALS, SNACKS, addDays, balanceStatus, dayBalance, dayTotals, draftDay,
@@ -126,6 +127,39 @@ function WeightCard({ S, today }) {
   </div>
 }
 
+// "¿Qué comiste?" in plain words: matched on the phone against Nico's own meals and a table of
+// Colombian foods (lib/food-text.js), shown for a check, then added in one tap.
+function QuickText({ S, iso }) {
+  const [text, setText] = useState('')
+  const [res, setRes] = useState(null)
+  const calc = () => setRes(text.trim() ? parseFoodText(text, S) : null)
+  const drop = i => setRes(r => ({ ...r, items: r.items.filter((_, j) => j !== i) }))
+  const addAll = () => {
+    const items = res?.items || []
+    if (!items.length) return
+    update(s => { const d = draftDay(s, iso); for (const m of items) d.meals.push({ id: uid(), name: m.name, kcal: m.kcal, p: m.p, c: m.c, f: m.f, at: Date.now() }) })
+    useUI.getState().toast(t('+{0} kcal · {1} g protein', int(items.reduce((a, m) => a + m.kcal, 0)), int(items.reduce((a, m) => a + m.p, 0))))
+    setText(''); setRes(null)
+  }
+  return <div className="card">
+    <h2 style={{ margin: 0 }}>{t('What did you eat?')}</h2>
+    <div className="dim small" style={{ margin: '4px 0 8px' }}>{t('Write it the way you would say it, for example: 2 huevos, arepa con queso y café con azúcar')}</div>
+    <TextArea rows={2} value={text} onChange={e => { setText(e.target.value); setRes(null) }} placeholder={t('arroz, fríjoles, carne y tajadas')} />
+    <div style={{ height: 8 }} />
+    <Button variant="primary" onClick={calc} disabled={!text.trim()}>{t('Work out the macros')}</Button>
+    {res && <div style={{ marginTop: 10 }}>
+      {res.items.map((m, i) => <div className="sym-meal" key={i}>
+        <div className="grow"><div className="ttl">{m.e} {m.name}</div><div className="dim small">{int(m.kcal)} kcal · P {int(m.p)} · C {int(m.c)} · G {int(m.f)}</div></div>
+        <button className="iconbtn" style={{ width: 30, height: 30 }} onClick={() => drop(i)} aria-label={t('Delete')}><Icon name="xmark" /></button>
+      </div>)}
+      {res.unmatched.length > 0 && <div className="small" style={{ color: 'var(--yellow)', marginTop: 6 }}>
+        {t('Not found: {0}. Add it with Add food, Something else, and next time it is found.', res.unmatched.join(', '))}</div>}
+      {res.items.length > 0 && <div style={{ marginTop: 10 }}><Button variant="primary" onClick={addAll}>
+        {t('Add all · {0} kcal · {1} g protein', int(res.items.reduce((a, m) => a + m.kcal, 0)), int(res.items.reduce((a, m) => a + m.p, 0)))}</Button></div>}
+    </div>}
+  </div>
+}
+
 // Brings in a Symmetry Tauro backup (its "Exportar copia" JSON): workouts, food days, weigh-ins.
 function ImportCard() {
   const pick = async e => {
@@ -140,7 +174,7 @@ function ImportCard() {
     } catch { toast(t('That file is not a Symmetry Tauro backup')); return }
     let res
     update(S => { res = mergeSymmetry(S, parsed, SYMMETRY_CUSTOM_EX) })
-    toast(t('Imported {0} workouts, {1} food days and {2} weigh-ins', res.workouts, res.foodDays, res.weighIns))
+    toast(t('Imported {0} workouts, {1} food days and {2} weigh-ins', res.workouts, res.foodDays, res.weighIns) + (res.routines ? ' · ' + t('your routine is in Plan') : ''))
   }
   return <div className="card">
     <h2 style={{ margin: 0 }}>{t('Bring your Symmetry Tauro data')}</h2>
@@ -172,6 +206,8 @@ export default function Food() {
         <button className="iconbtn" disabled={iso >= today} onClick={() => setIso(addDays(iso, 1))} aria-label={t('Next day')}><Icon name="chevronRight" /></button>
       </div>
     </div>
+
+    <QuickText S={S} iso={iso} />
 
     <div className="card">
       <div className="row between"><h2 style={{ margin: 0 }}>{t('Calories')}</h2><Button size="sm" variant="tinted" icon="plus" onClick={openAdd}>{t('Add food')}</Button></div>
