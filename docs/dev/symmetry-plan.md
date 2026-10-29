@@ -96,7 +96,7 @@ Weigh-ins reuse openGym's `S.bodyweight`, so the check-in, the weigh-in sheet an
 - `days` → `S.food`; `weights` → `S.bodyweight`. Pure in `lib/import-symmetry.js` (+ test); a day already in openGym is
   kept, so importing twice adds nothing. The artifact's own custom exercises become `sym-*` customs.
 
-### 5. Android APK (next)
+### 5. Android APK (workflow ready; needs the secrets)
 
 No Android Studio on the PC, so the APK is built by GitHub Actions in Nico's fork:
 
