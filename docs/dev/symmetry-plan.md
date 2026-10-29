@@ -25,6 +25,7 @@ Branch: `symmetry`. Upstream: `https://github.com/DuarteSantos8/openGym` (remote
 | Food tab | `frontend/src/views/Food.jsx` (route `/food`, tab in `components/TabBar.jsx`) | |
 | Ranks screen, level card on Home, rank-up toast | `frontend/src/views/Ranks.jsx` (route `/ranks`, `RankWatcher` in `App.jsx`) | |
 | UI strings | `frontend/scripts/symmetry-locales.mjs` writes them into every locale pack | `check-locales.mjs`, `check-source-strings.mjs` |
+| Backup import | `frontend/src/lib/import-symmetry.js`, ImportCard in `views/Food.jsx` | `import-symmetry.test.js` |
 | Styles | `frontend/src/symmetry.css` | |
 
 State added to the profile: `S.food = { [iso]: { meals: [{ id, name, kcal, p, c, f, at }], water, act: { steps, km, kcalAct } } }`.
@@ -81,15 +82,15 @@ Weigh-ins reuse openGym's `S.bodyweight`, so the check-in, the weigh-in sheet an
 | cybex_chest | sym-cybex-chest | | jalon_gym80 | sym-gym80-pulldown |
 | remo_pecho_gym80 | sym-gym80-chest-row | | | |
 
-### 4. Import the artifact's backup (next)
+### 4. Import the artifact's backup (done)
 
-- Settings → "Import Symmetry Tauro backup": reads the JSON from the artifact's "Exportar copia"
+- Food tab → "Import backup" (`views/Food.jsx` ImportCard): reads the JSON from the artifact's "Exportar copia"
   (state v4: `sessions[].entries[].sets`, `days{ meals, water, act }`, `weights`).
 - Sessions → `S.workouts` with the id map above; weights through the artifact's `ogWeight()`
   (pl × 10 kg, lado × 2 (+20 kg bar on barbells), mc as is, lb kept as lb, pc → 0 with a note).
   Warm-ups (`t: 'w'`) → `warmup: true`; failure (`t: 'f'`) → `failure: true`. Cardio → treadmill sets.
-- `days` → `S.food`; `weights` → `S.bodyweight`. Pure in `lib/import-symmetry.js` with a test on a
-  fixture backup; importing twice must not duplicate anything.
+- `days` → `S.food`; `weights` → `S.bodyweight`. Pure in `lib/import-symmetry.js` (+ test); a day already in openGym is
+  kept, so importing twice adds nothing. The artifact's own custom exercises become `sym-*` customs.
 
 ### 5. Android APK (next)
 

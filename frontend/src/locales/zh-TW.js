@@ -2643,5 +2643,9 @@ export default {
   'trend': 'trend',
   '{0} XP to the next level · {1} of {2} muscles ranked': '{0} XP to the next level · {1} of {2} muscles ranked',
   '{0} added': '{0} added',
+  'Bring your Symmetry Tauro data': 'Bring your Symmetry Tauro data',
+  'In Symmetry Tauro: Settings, Export backup. Then pick that file here. Days you already have here are kept.': 'In Symmetry Tauro: Settings, Export backup. Then pick that file here. Days you already have here are kept.',
+  'Imported {0} workouts, {1} food days and {2} weigh-ins': 'Imported {0} workouts, {1} food days and {2} weigh-ins',
+  'That file is not a Symmetry Tauro backup': 'That file is not a Symmetry Tauro backup',
   // --- /symmetry ---
 }

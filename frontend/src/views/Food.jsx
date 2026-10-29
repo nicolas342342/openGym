@@ -12,6 +12,8 @@ import {
   GOALS, BASE_KCAL, QUICK_MEALS, SNACKS, addDays, balanceStatus, dayBalance, dayTotals, draftDay,
   dynamicTDEE, foodDay, weekBalance, weightTrend,
 } from '../lib/nutrition.js'
+import { mergeSymmetry, parseSymmetryBackup } from '../lib/import-symmetry.js'
+import { SYMMETRY_CUSTOM_EX } from '../lib/symmetry-plan.js'
 import '../symmetry.css'
 
 const update = fn => useStore.getState().update(fn)
@@ -124,6 +126,32 @@ function WeightCard({ S, today }) {
   </div>
 }
 
+// Brings in a Symmetry Tauro backup (its "Exportar copia" JSON): workouts, food days, weigh-ins.
+function ImportCard() {
+  const pick = async e => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    const toast = m => useUI.getState().toast(m)
+    let parsed
+    try {
+      const data = JSON.parse(await file.text())
+      parsed = parseSymmetryBackup(data, { unit: useStore.getState().S.unit })
+    } catch { toast(t('That file is not a Symmetry Tauro backup')); return }
+    let res
+    update(S => { res = mergeSymmetry(S, parsed, SYMMETRY_CUSTOM_EX) })
+    toast(t('Imported {0} workouts, {1} food days and {2} weigh-ins', res.workouts, res.foodDays, res.weighIns))
+  }
+  return <div className="card">
+    <h2 style={{ margin: 0 }}>{t('Bring your Symmetry Tauro data')}</h2>
+    <div className="muted small" style={{ margin: '6px 0 10px' }}>{t('In Symmetry Tauro: Settings, Export backup. Then pick that file here. Days you already have here are kept.')}</div>
+    <label className="btn tinted" style={{ display: 'inline-flex', cursor: 'pointer' }}>
+      <Icon name="download" /> {t('Import backup')}
+      <input type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={pick} />
+    </label>
+  </div>
+}
+
 export default function Food() {
   const S = useStore(s => s.S)
   const today = todayISO()
@@ -189,5 +217,6 @@ export default function Food() {
     <DayBalance b={b} isToday={iso === today} />
     <WeekBalance S={S} iso={iso} today={today} />
     <WeightCard S={S} today={today} />
+    <ImportCard />
   </div>
 }
