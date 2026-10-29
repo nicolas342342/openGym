@@ -31,7 +31,7 @@ export default function TabBar({ onStart }) {
   if (!user && !isGuest) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // A screen without a tab of its own lights the tab it is opened from (Muscles from both).
-  const PARENT = { history: 'stats', 'structural-balance': 'stats', 'progress-photos': 'stats', measurements: 'stats', settings: 'home', checkin: 'home', muscles: 'library' }
+  const PARENT = { history: 'stats', 'structural-balance': 'stats', 'progress-photos': 'stats', measurements: 'stats', settings: 'home', checkin: 'home', muscles: 'library', ranks: 'home' }
   const parent = cur === 'muscles' && loc.state?.from === '/stats' ? 'stats' : PARENT[cur]
   const on = k => cur === k || parent === k
 
@@ -69,6 +69,8 @@ export default function TabBar({ onStart }) {
       </button>
       <Tab active={on('stats')} icon="chart" label={t('Stats')} onClick={() => switchTab('/stats')} />
       <Tab active={on('library')} icon="dumbbell" label={t('Exercises')} onClick={() => switchTab('/library')} />
+      {/* Symmetry: the food and energy-balance tab (views/Food.jsx). */}
+      <Tab active={on('food')} icon="flame" label={t('Food')} onClick={() => switchTab('/food')} />
     </nav>
   )
 }

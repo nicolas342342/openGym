@@ -46,6 +46,7 @@ import PermissionSteps from './views/PermissionSteps.jsx'
 import Home from './views/Home.jsx'
 import Plan from './views/Plan.jsx'
 import Workout from './views/Workout.jsx'
+import { RankWatcher } from './views/Ranks.jsx'
 
 // Screens most sessions never open (the Coach, the admin dashboard, photos, measurements, the
 // balance check) are their own chunks rather than part of the code every start parses: ~200 KB
@@ -77,6 +78,8 @@ const Stats = lazyView(() => import('./views/Stats.jsx'))
 const History = lazyView(() => import('./views/History.jsx'))
 const Library = lazyView(() => import('./views/Library.jsx'))
 const Muscles = lazyView(() => import('./views/Muscles.jsx'))
+const Food = lazyView(() => import('./views/Food.jsx'))
+const Ranks = lazyView(() => import('./views/Ranks.jsx'))
 const SettingsRoute = lazyView(() => import('./views/Settings.jsx').then(m => ({ default: m.SettingsRoute })))
 let viewsPrefetched = false
 const prefetchViews = () => {
@@ -301,6 +304,8 @@ function Shell() {
       <Route path="/history" element={<History />} />
       <Route path="/library" element={<Library />} />
       <Route path="/muscles" element={<Muscles />} />
+      <Route path="/food" element={<Food />} />
+      <Route path="/ranks" element={<Ranks />} />
       <Route path="/structural-balance" element={<StructuralBalance />} />
       <Route path="/progress-photos" element={<ProgressPhotos />} />
       <Route path="/measurements" element={<Measurements />} />
@@ -335,6 +340,7 @@ function Shell() {
           including on the sign-in screen, when the server has just ended the session. */}
       <SyncBanner />
       {!noTabs && <TabBar onStart={startFlow} />}
+      {authed && <RankWatcher />}
       <RestTimer />
       <Modals />
       <Toast />

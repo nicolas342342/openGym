@@ -27,15 +27,22 @@ const APPROVED = {
     [3, '5×5 B', [['0085', 5, 5], ['0426', 5, 5], ['2330', 5, 5]]],
     [5, '5×5 C', [['0739', 5, 5], ['0047', 5, 5], ['1323', 5, 5]]],
   ],
+  symmetry: [
+    [1, 'Push · Empuje', [['0314', 3, 10], ['0576', 2, 10], ['0405', 2, 10], ['1030', 2, 12], ['0584', 3, 15], ['0194', 2, 12], ['1451', 2, 12]]],
+    [2, 'Pull · Tracción', [['sym-gym80-pulldown', 3, 10], ['sym-gym80-chest-row', 3, 10], ['0861', 2, 12], ['11060', 3, 15], ['0318', 2, 12], ['0313', 2, 12]]],
+    [3, 'Legs · Pierna', [['0743', 3, 10], ['0739', 2, 12], ['0599', 3, 15], ['0585', 2, 15], ['1391', 3, 15], ['1452', 2, 15]]],
+    [4, 'Upper · Torso', [['sym-cybex-chest', 3, 12], ['0606', 3, 10], ['2291', 2, 12], ['0178', 3, 15], ['3084', 2, 12], ['0241', 2, 12]]],
+    [5, 'Lower · Cadena posterior', [['1459', 3, 10], ['0739', 3, 12], ['0599', 2, 15], ['0585', 2, 15], ['1391', 2, 15], ['0594', 2, 15], ['1452', 2, 15]]],
+  ],
 }
 
 const shape = r => r.ex.map(e => [e.id, e.sets, e.reps])
 
 describe('starter plan catalog', () => {
-  it('offers exactly the four plans, with the day count read off the schedule', () => {
+  it('offers exactly the five plans, with the day count read off the schedule', () => {
     expect(starterPlanOptions()).toEqual([
       { id: 'ppl', days: 3 }, { id: 'upper-lower', days: 4 },
-      { id: 'full-body', days: 3 }, { id: '5x5', days: 3 },
+      { id: 'full-body', days: 3 }, { id: '5x5', days: 3 }, { id: 'symmetry', days: 5 },
     ])
     for (const { id, days } of starterPlanOptions()) expect(starterPlanDays(id)).toHaveLength(days)
   })
@@ -66,9 +73,11 @@ describe.each(Object.keys(APPROVED))('%s', planId => {
   })
 
   it('references only real exercises and starts every one at weight 0', () => {
-    for (const r of buildStarterPlan(planId).routines) {
+    const plan = buildStarterPlan(planId)
+    const own = new Set((plan.customEx || []).map(c => c.id))
+    for (const r of plan.routines) {
       for (const e of r.ex) {
-        expect(EXIDX[e.id], e.id).toBeTruthy()
+        expect(EXIDX[e.id] || own.has(e.id), e.id).toBeTruthy()
         expect(e.sets).toBeGreaterThan(0)
         expect(e.reps).toBeGreaterThan(0)
         expect(e.weight).toBe(0)
@@ -105,7 +114,8 @@ describe('starterRoutines (the demo build entry point)', () => {
 })
 
 describe('fitting a starter plan to equipment', () => {
-  const ids = plan => plan.routines.flatMap(r => r.ex.map(e => e.id))
+  // Symmetry's Tauro machines are custom exercises, outside the catalogue and kept as they are.
+  const ids = plan => plan.routines.flatMap(r => r.ex.map(e => e.id)).filter(id => !id.startsWith('sym-'))
 
   it('changes nothing when the equipment already covers the plan', () => {
     const all = ALL_EQUIPMENT

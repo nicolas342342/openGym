@@ -8,6 +8,7 @@
 import { uid } from './format.js'
 import { EXIDX } from './exercises.js'
 import { eqAvailable, ALL_EQUIPMENT } from './equipment.js'
+import { SYMMETRY, SYMMETRY_CUSTOM_EX } from './symmetry-plan.js'
 
 const PPL = [
   ['push', 'Push Day', 'barbell', [['0025', 4, 8], ['0047', 3, 10], ['0426', 3, 10], ['0334', 3, 12], ['0241', 3, 12], ['0251', 3, 10]]],
@@ -40,11 +41,13 @@ const PLANS = {
   ppl: { routines: PPL, schedule: [[1, 'push'], [3, 'pull'], [5, 'legs']] },
   'upper-lower': { routines: UPPER_LOWER, schedule: [[1, 'upper-a'], [2, 'lower-a'], [4, 'upper-b'], [5, 'lower-b']] },
   'full-body': { routines: FULL_BODY, schedule: [[1, 'fb-a'], [3, 'fb-b'], [5, 'fb-c']] },
-  '5x5': { routines: FIVE_BY_FIVE, schedule: [[1, '5x5-a'], [3, '5x5-b'], [5, '5x5-c']] }
+  '5x5': { routines: FIVE_BY_FIVE, schedule: [[1, '5x5-a'], [3, '5x5-b'], [5, '5x5-c']] },
+  // Nico's 5-day Tauro Gym split; the machines the catalogue lacks come as custom exercises.
+  symmetry: { routines: SYMMETRY, schedule: [[1, 'push'], [2, 'pull'], [3, 'legs'], [4, 'upper'], [5, 'lower']], customEx: SYMMETRY_CUSTOM_EX }
 }
 
 const build = routines =>
-  routines.map(([, name, emoji, list]) => ({ id: uid(), name, emoji, ex: list.map(([id, sets, reps]) => ({ id, sets, reps, weight: 0 })) }))
+  routines.map(([, name, emoji, list]) => ({ id: uid(), name, emoji, ex: list.map(([id, sets, reps, extra]) => ({ id, sets, reps, weight: 0, ...extra })) }))
 
 // Fresh routine objects (new ids) — [push, pull, legs]. The demo build seeds a history on
 // top of exactly these three, so this entry point keeps its shape.
@@ -132,6 +135,7 @@ export const buildStarterPlan = (id, equipment) => {
   return {
     routines,
     schedule: plan.schedule.filter(([, key]) => byKey[key]).map(([day, key]) => ({ day, routineId: byKey[key] })),
-    ...(fit && { fit: { swapped: fit.swapped, dropped: fit.dropped } })
+    ...(fit && { fit: { swapped: fit.swapped, dropped: fit.dropped } }),
+    ...(plan.customEx && { customEx: plan.customEx.map(c => ({ ...c })) })
   }
 }

@@ -178,7 +178,8 @@ const PLAN_COPY = {
   ppl: () => ({ name: t('Push / Pull / Legs'), about: t('Push, pull and legs each get their own day.') }),
   'upper-lower': () => ({ name: t('Upper / Lower'), about: t('Upper body twice, lower body twice.') }),
   'full-body': () => ({ name: t('Full Body'), about: t('Three sessions, the whole body each time.') }),
-  '5x5': () => ({ name: t('5×5'), about: t('Five sets of five on the main barbell lifts.') })
+  '5x5': () => ({ name: t('5×5'), about: t('Five sets of five on the main barbell lifts.') }),
+  symmetry: () => ({ name: t('Symmetry 5 days'), about: t("Nico's Tauro Gym split: push, pull, legs, upper, lower.") })
 }
 
 // Adds the plan's routines (reusing one you already have under the same name) and puts them on
@@ -190,6 +191,8 @@ export function loadStarterPlan(planId, profile) {
   const plan = buildStarterPlan(planId, profile ? profileEquipment(profile) : undefined)
   if (!plan) return false
   update(st => {
+    // Custom machines a plan brings (Symmetry's Tauro Gym ones), unless already there.
+    for (const c of plan.customEx || []) if (!st.customEx.some(x => x.id === c.id)) st.customEx.push(c)
     // Loading the same plan again reuses the routines it added last time (same name, same
     // exercises) for the weekdays instead of a second Upper A, Lower A, ... under the same names.
     // A plan fitted to different equipment has other exercises, so it is added alongside.
